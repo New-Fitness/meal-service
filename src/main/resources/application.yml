@@ -1,0 +1,33 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: meal-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fitness_ai
+    username: postgres
+    password: password
+  jooq:
+    sql-dialect: POSTGRES
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+ai:
+  ollama:
+    base-url: http://localhost:11434
+    init:
+      # (опции автозагрузки моделей, можно настраивать)
+      pull-model-strategy: when_missing
+    chat:
+      options:
+        model: llama3:latest
+        temperature: 0.2
+        # другие настройки, если нужно
+
+logging:
+  level:
+    root: INFO
+    org.springframework.ai: DEBUG
