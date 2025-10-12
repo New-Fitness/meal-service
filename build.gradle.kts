@@ -1,8 +1,13 @@
+import org.jooq.meta.jaxb.Logging
+
 plugins {
     java
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
-    id("nu.studer.jooq") version "8.2"   // ← стабильная версия
+    id("nu.studer.jooq") version "8.2"
+    id("org.liquibase.gradle") version "2.2.0"
+    kotlin("jvm") version "1.9.24"
+    kotlin("plugin.spring") version "1.9.24"
 }
 
 group = "org.tesinitsyn"
@@ -25,6 +30,10 @@ repositories {
     mavenCentral()
 }
 
+val dbUrl = "jdbc:postgresql://localhost:5432/fitness_ai"
+val dbUser = "postgres"
+val dbPassword = "password"
+
 extra["springAiVersion"] = "1.0.3"
 
 dependencies {
@@ -40,6 +49,11 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // 💡 Важно: runtime для Liquibase
+    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime("org.postgresql:postgresql:42.7.3")
+    liquibaseRuntime("info.picocli:picocli:4.7.5") // CLI-зависимость, нужна плагину
 }
 
 dependencyManagement {
@@ -48,27 +62,45 @@ dependencyManagement {
     }
 }
 
+// ============================
+// 🚀 Liquibase
+// ============================
+liquibase {
+    activities.register("main") {
+        arguments = mapOf(
+            "changeLogFile" to "src/main/resources/db/changelog/db.changelog-master.yaml",
+            "url" to dbUrl,
+            "username" to dbUser,
+            "password" to dbPassword
+        )
+    }
+    runList = "main"
+}
+
 // --- jOOQ code generation ---
 jooq {
-    version.set("3.19.8")
+    version.set("3.19.9")
     configurations {
         create("main") {
-            generateSchemaSourceOnCompilation.set(false)
             jooqConfiguration.apply {
-                logging = org.jooq.meta.jaxb.Logging.WARN
-
+                logging = Logging.WARN
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
-                    url = "jdbc:postgresql://localhost:5432/fitness_ai"
-                    user = "postgres"
-                    password = "password"
+                    url = dbUrl
+                    user = dbUser
+                    password = dbPassword
                 }
-
                 generator.apply {
                     name = "org.jooq.codegen.DefaultGenerator"
                     database.apply {
                         name = "org.jooq.meta.postgres.PostgresDatabase"
                         inputSchema = "public"
+                        excludes = "databasechangelog|databasechangeloglock"
+                    }
+                    generate.apply {
+                        isDaos = true
+                        isPojos = true
+                        isRecords = true
                     }
                     target.apply {
                         packageName = "com.fitnessai.meal.jooq.generated"
@@ -80,8 +112,8 @@ jooq {
     }
 }
 
-tasks.named<JavaCompile>("compileJava") {
-    dependsOn(tasks.named("generateJooq"))
+tasks.named("generateJooq") {
+    dependsOn("update")
 }
 
 tasks.withType<Test> {
