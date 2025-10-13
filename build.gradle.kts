@@ -15,29 +15,25 @@ version = "0.0.1-SNAPSHOT"
 description = "meal-service"
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
 configurations {
-    compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
+    compileOnly { extendsFrom(annotationProcessor.get()) }
 }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 extra["springAiVersion"] = "1.0.3"
 
 // ============================
 // 🌿 ENV: окружение (dev/test/prod)
 // ============================
+
 val isTestTask = gradle.startParameter.taskNames.any { it.contains("test", ignoreCase = true) }
 val env = project.findProperty("env")
     ?: if (isTestTask) "test"
     else (System.getenv("SPRING_PROFILES_ACTIVE") ?: "dev")
-
 
 val dbConfig = when (env) {
     "prod" -> mapOf(
@@ -60,7 +56,6 @@ val dbConfig = when (env) {
 val dbUrl = dbConfig["url"]!!
 val dbUser = dbConfig["user"]!!
 val dbPassword = dbConfig["password"]!!
-
 
 println("▶️  Active environment: $env")
 println("📦  Using DB: $dbUrl")
@@ -114,16 +109,15 @@ liquibase {
     runList = "main"
 }
 
-// 🧹 Быстрая команда для локалки — полностью пересоздать базу
-// --- безопасный таск для локальной разработки ---
+// ============================
+// 🧹 Безопасная очистка и миграция
+// ============================
+
 tasks.register("liquibaseCleanAndUpdate") {
     group = "database"
     description = "Drops and reapplies all Liquibase migrations (safe for local use)"
-
-    // Создаём подзадачи динамически, если Liquibase подключен
     doLast {
         val liquibaseTasks = listOf("liquibaseDropAll", "liquibaseUpdate")
-
         liquibaseTasks.forEach { name ->
             val task = tasks.findByName(name)
             if (task != null) {
@@ -135,8 +129,6 @@ tasks.register("liquibaseCleanAndUpdate") {
         }
     }
 }
-
-
 
 // ============================
 // 🧬 jOOQ code generation
@@ -177,9 +169,19 @@ jooq {
     }
 }
 
-// jOOQ всегда после миграций
-tasks.named("generateJooq") {
-    dependsOn("liquibaseUpdate")
+// ============================
+// 🧩 Безопасная связка Liquibase → jOOQ
+// ============================
+
+gradle.projectsEvaluated {
+    val liquibaseUpdate = tasks.findByName("liquibaseUpdate")
+    val generateJooq = tasks.findByName("generateJooq")
+    if (liquibaseUpdate != null && generateJooq != null) {
+        generateJooq.dependsOn(liquibaseUpdate)
+        println("✅ Linked liquibaseUpdate → generateJooq")
+    } else {
+        println("⚠️  liquibaseUpdate or generateJooq not found at configuration time — skipping link.")
+    }
 }
 
 // ============================
@@ -188,6 +190,8 @@ tasks.named("generateJooq") {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    systemProperty("spring.profiles.active", "test")
+    project.extensions.extraProperties["env"] = "test"
 }
 
 // ============================
