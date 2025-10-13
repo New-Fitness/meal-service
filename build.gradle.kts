@@ -115,11 +115,28 @@ liquibase {
 }
 
 // 🧹 Быстрая команда для локалки — полностью пересоздать базу
+// --- безопасный таск для локальной разработки ---
 tasks.register("liquibaseCleanAndUpdate") {
     group = "database"
-    description = "Drop and reapply all migrations"
-    dependsOn("liquibaseDropAll", "liquibaseUpdate")
+    description = "Drops and reapplies all Liquibase migrations (safe for local use)"
+
+    // Создаём подзадачи динамически, если Liquibase подключен
+    doLast {
+        val liquibaseTasks = listOf("liquibaseDropAll", "liquibaseUpdate")
+
+        liquibaseTasks.forEach { name ->
+            val task = tasks.findByName(name)
+            if (task != null) {
+                println("▶️  Running $name ...")
+                task.actions.forEach { it.execute(task) }
+            } else {
+                println("⚠️  Task $name not found — skipping (normal for CI).")
+            }
+        }
+    }
 }
+
+
 
 // ============================
 // 🧬 jOOQ code generation
