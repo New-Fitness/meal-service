@@ -203,3 +203,10 @@ tasks.register("dbResetAndGenerate") {
     description = "Reset DB, apply migrations, generate jOOQ code"
     dependsOn("liquibaseCleanAndUpdate", "generateJooq")
 }
+
+// ============================
+// 🔗 Компиляция после jOOQ генерации
+// ============================
+tasks.named("compileJava") {
+    dependsOn(tasks.named("generateJooq"))
+}
