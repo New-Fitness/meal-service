@@ -21,39 +21,75 @@ java {
 }
 
 configurations {
-    compileOnly {
-        extendsFrom(configurations.annotationProcessor.get())
-    }
+    compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
 }
 
 repositories {
     mavenCentral()
 }
 
-val dbUrl = "jdbc:postgresql://localhost:5432/fitness_ai"
-val dbUser = "postgres"
-val dbPassword = "password"
-
 extra["springAiVersion"] = "1.0.3"
+
+// ============================
+// 🌿 ENV: окружение (dev/test/prod)
+// ============================
+val isTestTask = gradle.startParameter.taskNames.any { it.contains("test", ignoreCase = true) }
+val env = project.findProperty("env")
+    ?: if (isTestTask) "test"
+    else (System.getenv("SPRING_PROFILES_ACTIVE") ?: "dev")
+
+
+val dbConfig = when (env) {
+    "prod" -> mapOf(
+        "url" to "jdbc:postgresql://prod-db:5432/fitness_ai",
+        "user" to "postgres",
+        "password" to (System.getenv("DB_PASSWORD") ?: "password")
+    )
+    "test" -> mapOf(
+        "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
+        "user" to "postgres",
+        "password" to "password"
+    )
+    else -> mapOf(
+        "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
+        "user" to "postgres",
+        "password" to "password"
+    )
+}
+
+val dbUrl = dbConfig["url"]!!
+val dbUser = dbConfig["user"]!!
+val dbPassword = dbConfig["password"]!!
+
+
+println("▶️  Active environment: $env")
+println("📦  Using DB: $dbUrl")
+
+// ============================
+// 📦 Dependencies
+// ============================
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
+    implementation("org.liquibase:liquibase-core")
+    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
     implementation("org.postgresql:postgresql:42.7.3")
     jooqGenerator("org.postgresql:postgresql:42.7.3")
-    implementation("org.liquibase:liquibase-core")
-    annotationProcessor("org.projectlombok:lombok")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // 💡 Важно: runtime для Liquibase
+    // Runtime для Liquibase
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime("org.postgresql:postgresql:42.7.3")
-    liquibaseRuntime("info.picocli:picocli:4.7.5") // CLI-зависимость, нужна плагину
+    liquibaseRuntime("info.picocli:picocli:4.7.5")
 }
 
 dependencyManagement {
@@ -63,8 +99,9 @@ dependencyManagement {
 }
 
 // ============================
-// 🚀 Liquibase
+// 🧱 Liquibase
 // ============================
+
 liquibase {
     activities.register("main") {
         arguments = mapOf(
@@ -77,11 +114,22 @@ liquibase {
     runList = "main"
 }
 
-// --- jOOQ code generation ---
+// 🧹 Быстрая команда для локалки — полностью пересоздать базу
+tasks.register("liquibaseCleanAndUpdate") {
+    group = "database"
+    description = "Drop and reapply all migrations"
+    dependsOn("liquibaseDropAll", "liquibaseUpdate")
+}
+
+// ============================
+// 🧬 jOOQ code generation
+// ============================
+
 jooq {
     version.set("3.19.9")
     configurations {
         create("main") {
+            generateSchemaSourceOnCompilation.set(false)
             jooqConfiguration.apply {
                 logging = Logging.WARN
                 jdbc.apply {
@@ -112,10 +160,25 @@ jooq {
     }
 }
 
+// jOOQ всегда после миграций
 tasks.named("generateJooq") {
-    dependsOn("update")
+    dependsOn("liquibaseUpdate")
 }
+
+// ============================
+// 🧪 Testing
+// ============================
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// ============================
+// 🧰 Удобные ярлыки для локалки
+// ============================
+
+tasks.register("dbResetAndGenerate") {
+    group = "local-dev"
+    description = "Reset DB, apply migrations, generate jOOQ code"
+    dependsOn("liquibaseCleanAndUpdate", "generateJooq")
 }
