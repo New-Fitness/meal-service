@@ -205,8 +205,15 @@ tasks.register("dbResetAndGenerate") {
 }
 
 // ============================
-// 🔗 Компиляция после jOOQ генерации
+// ✅ Liquibase → jOOQ → compileJava
 // ============================
-tasks.named("compileJava") {
-    dependsOn(tasks.named("generateJooq"))
+tasks.whenTaskAdded {
+    if (name == "generateJooq") {
+        dependsOn("liquibaseUpdate")
+    }
 }
+
+tasks.named("compileJava") {
+    dependsOn("generateJooq")
+}
+
