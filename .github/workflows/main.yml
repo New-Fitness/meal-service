@@ -31,6 +31,7 @@ jobs:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       JAVA_TOOL_OPTIONS: "-Xmx2g"
+      DB_PASSWORD: password  # 👈 нужно, чтобы build.gradle.kts понимал пароль для prod профиля
 
     steps:
       - name: Checkout repository
@@ -57,6 +58,11 @@ jobs:
       - name: Grant execute permissions for gradlew
         run: chmod +x gradlew
 
-      # 👇 Выполняем полноценную сборку и тестирование в профиле prod
-      - name: Build & Test (with Liquibase)
-        run: ./gradlew clean build --stacktrace
+      # 👇 Запускаем всё с новым профилем Gradle (-Penv=prod)
+      - name: Run Liquibase & Build
+        run: |
+          ./gradlew liquibaseUpdate generateJooq build -Penv=prod --stacktrace
+
+      # 👇 (опционально) если хочешь, можно добавить полный тестовый прогон
+      - name: Run Tests
+        run: ./gradlew test -Penv=prod --stacktrace
