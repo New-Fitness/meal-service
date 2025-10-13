@@ -4,7 +4,7 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:postgresql://prod-db:5432/fitness_ai
+    url: jdbc:postgresql://localhost:5432/fitness_ai
     username: postgres
     password: ${DB_PASSWORD}
 
