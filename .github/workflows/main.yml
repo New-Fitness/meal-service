@@ -30,8 +30,8 @@ jobs:
       SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fitness_ai
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
+      DB_PASSWORD: password
       JAVA_TOOL_OPTIONS: "-Xmx2g"
-      DB_PASSWORD: password  # 👈 нужно, чтобы build.gradle.kts понимал пароль для prod профиля
 
     steps:
       - name: Checkout repository
@@ -40,8 +40,8 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
           cache: gradle
 
       - name: Wait for PostgreSQL to be ready
@@ -55,14 +55,23 @@ jobs:
             sleep 5
           done
 
-      - name: Grant execute permissions for gradlew
+      - name: Grant execute permissions for Gradle wrapper
         run: chmod +x gradlew
 
-      # 👇 Запускаем всё с новым профилем Gradle (-Penv=prod)
-      - name: Run Liquibase & Build
-        run: |
-          ./gradlew liquibaseUpdate generateJooq build -Penv=prod --stacktrace
+      # ===============================
+      # 🧱 Liquibase + jOOQ + Build
+      # ===============================
+      - name: Run Liquibase migrations
+        run: ./gradlew update -Penv=prod --stacktrace
 
-      # 👇 (опционально) если хочешь, можно добавить полный тестовый прогон
+      - name: Generate jOOQ code
+        run: ./gradlew generateJooq -Penv=prod --stacktrace
+
+      - name: Build project
+        run: ./gradlew build -Penv=prod --stacktrace
+
+      # ===============================
+      # 🧪 Tests
+      # ===============================
       - name: Run Tests
         run: ./gradlew test -Penv=prod --stacktrace
