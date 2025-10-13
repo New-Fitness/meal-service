@@ -3,5 +3,10 @@ spring:
     activate:
       on-profile: dev
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fitness_ai
+    username: postgres
+    password: password
+
   liquibase:
     enabled: false

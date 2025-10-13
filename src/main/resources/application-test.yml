@@ -3,12 +3,12 @@ spring:
     activate:
       on-profile: test
 
-  liquibase:
-    drop-first: true   # 👈 перед каждым тестом очищает схему
-    enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.yaml
-
   datasource:
     url: jdbc:postgresql://localhost:5432/fitness_ai
     username: postgres
     password: password
+
+  liquibase:
+    enabled: true
+    drop-first: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
