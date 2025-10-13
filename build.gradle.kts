@@ -37,7 +37,7 @@ val env = project.findProperty("env")
 
 val dbConfig = when (env) {
     "prod" -> mapOf(
-        "url" to "jdbc:postgresql://prod-db:5432/fitness_ai",
+        "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
         "user" to "postgres",
         "password" to (System.getenv("DB_PASSWORD") ?: "password")
     )
