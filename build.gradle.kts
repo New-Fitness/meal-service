@@ -1,4 +1,7 @@
 import org.jooq.meta.jaxb.Logging
+import org.gradle.kotlin.dsl.support.serviceOf
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 plugins {
     java
@@ -8,13 +11,6 @@ plugins {
     id("org.liquibase.gradle") version "2.2.0"
     kotlin("jvm") version "1.9.24"
     kotlin("plugin.spring") version "1.9.24"
-}
-
-buildscript {
-    dependencies {
-        classpath("org.liquibase:liquibase-core:4.29.2")
-        classpath("org.postgresql:postgresql:42.7.3")
-    }
 }
 
 group = "org.tesinitsyn"
@@ -68,10 +64,10 @@ println("📦  Using DB: $dbUrl")
 // ============================
 
 dependencies {
+    implementation("org.liquibase:liquibase-core:4.29.2")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.liquibase:liquibase-core")
     implementation("org.springframework.ai:spring-ai-starter-model-ollama")
 
     compileOnly("org.projectlombok:lombok")
@@ -84,8 +80,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // Liquibase runtime
-    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
     liquibaseRuntime("org.postgresql:postgresql:42.7.3")
     liquibaseRuntime("info.picocli:picocli:4.7.5")
 }
@@ -103,7 +98,7 @@ dependencyManagement {
 liquibase {
     activities.register("main") {
         arguments = mapOf(
-            "changeLogFile" to "src/main/resources/db/changelog/db.changelog-master.yaml",
+            "changelogFile" to "src/main/resources/db/changelog/db.changelog-master.yaml",
             "url" to dbUrl,
             "username" to dbUser,
             "password" to dbPassword
@@ -155,15 +150,14 @@ jooq {
 // ✅ TASK ORDER FIX
 // ============================
 
-tasks.whenTaskAdded {
-    if (name == "generateJooq") {
-        dependsOn("liquibaseUpdate")
-    }
+tasks.named("generateJooq") {
+    dependsOn("update") // это задача из Liquibase Gradle Plugin
 }
 
 tasks.named("compileJava") {
     dependsOn("generateJooq")
 }
+
 
 // ============================
 // 🧪 TESTS
@@ -184,8 +178,9 @@ tasks.register("dbResetAndGenerate") {
     description = "Reset DB, apply migrations, generate jOOQ code"
     doLast {
         println("🧹 Resetting DB...")
-        exec { commandLine("bash", "-c", "./gradlew liquibaseDropAll || true") }
-        exec { commandLine("bash", "-c", "./gradlew liquibaseUpdate") }
-        exec { commandLine("bash", "-c", "./gradlew generateJooq") }
+        val execOps = project.serviceOf<ExecOperations>()
+        execOps.exec { commandLine("bash", "-c", "./gradlew liquibaseDropAll || true") }
+        execOps.exec { commandLine("bash", "-c", "./gradlew liquibaseUpdate") }
+        execOps.exec { commandLine("bash", "-c", "./gradlew generateJooq") }
     }
 }
