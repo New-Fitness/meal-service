@@ -10,6 +10,13 @@ plugins {
     kotlin("plugin.spring") version "1.9.24"
 }
 
+buildscript {
+    dependencies {
+        classpath("org.liquibase:liquibase-core:4.29.2")
+        classpath("org.postgresql:postgresql:42.7.3")
+    }
+}
+
 group = "org.tesinitsyn"
 version = "0.0.1-SNAPSHOT"
 description = "meal-service"
@@ -18,16 +25,12 @@ java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
-configurations {
-    compileOnly { extendsFrom(annotationProcessor.get()) }
-}
-
 repositories { mavenCentral() }
 
 extra["springAiVersion"] = "1.0.3"
 
 // ============================
-// 🌿 ENV: окружение (dev/test/prod)
+// 🌿 ENVIRONMENT
 // ============================
 
 val isTestTask = gradle.startParameter.taskNames.any { it.contains("test", ignoreCase = true) }
@@ -61,7 +64,7 @@ println("▶️  Active environment: $env")
 println("📦  Using DB: $dbUrl")
 
 // ============================
-// 📦 Dependencies
+// 📦 DEPENDENCIES
 // ============================
 
 dependencies {
@@ -81,7 +84,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // Runtime для Liquibase
+    // Liquibase runtime
     liquibaseRuntime("org.liquibase:liquibase-core")
     liquibaseRuntime("org.postgresql:postgresql:42.7.3")
     liquibaseRuntime("info.picocli:picocli:4.7.5")
@@ -94,7 +97,7 @@ dependencyManagement {
 }
 
 // ============================
-// 🧱 Liquibase
+// 🧱 LIQUIBASE CONFIG
 // ============================
 
 liquibase {
@@ -110,28 +113,7 @@ liquibase {
 }
 
 // ============================
-// 🧹 Безопасная очистка и миграция
-// ============================
-
-tasks.register("liquibaseCleanAndUpdate") {
-    group = "database"
-    description = "Drops and reapplies all Liquibase migrations (safe for local use)"
-    doLast {
-        val liquibaseTasks = listOf("liquibaseDropAll", "liquibaseUpdate")
-        liquibaseTasks.forEach { name ->
-            val task = tasks.findByName(name)
-            if (task != null) {
-                println("▶️  Running $name ...")
-                task.actions.forEach { it.execute(task) }
-            } else {
-                println("⚠️  Task $name not found — skipping (normal for CI).")
-            }
-        }
-    }
-}
-
-// ============================
-// 🧬 jOOQ code generation
+// 🧬 jOOQ CODEGEN
 // ============================
 
 jooq {
@@ -170,43 +152,9 @@ jooq {
 }
 
 // ============================
-// 🧩 Безопасная связка Liquibase → jOOQ
+// ✅ TASK ORDER FIX
 // ============================
 
-gradle.projectsEvaluated {
-    val liquibaseUpdate = tasks.findByName("liquibaseUpdate")
-    val generateJooq = tasks.findByName("generateJooq")
-    if (liquibaseUpdate != null && generateJooq != null) {
-        generateJooq.dependsOn(liquibaseUpdate)
-        println("✅ Linked liquibaseUpdate → generateJooq")
-    } else {
-        println("⚠️  liquibaseUpdate or generateJooq not found at configuration time — skipping link.")
-    }
-}
-
-// ============================
-// 🧪 Testing
-// ============================
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-    systemProperty("spring.profiles.active", "test")
-    project.extensions.extraProperties["env"] = "test"
-}
-
-// ============================
-// 🧰 Удобные ярлыки для локалки
-// ============================
-
-tasks.register("dbResetAndGenerate") {
-    group = "local-dev"
-    description = "Reset DB, apply migrations, generate jOOQ code"
-    dependsOn("liquibaseCleanAndUpdate", "generateJooq")
-}
-
-// ============================
-// ✅ Liquibase → jOOQ → compileJava
-// ============================
 tasks.whenTaskAdded {
     if (name == "generateJooq") {
         dependsOn("liquibaseUpdate")
@@ -217,3 +165,27 @@ tasks.named("compileJava") {
     dependsOn("generateJooq")
 }
 
+// ============================
+// 🧪 TESTS
+// ============================
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+    systemProperty("spring.profiles.active", "test")
+    project.extensions.extraProperties["env"] = "test"
+}
+
+// ============================
+// 🧰 LOCAL SHORTCUT
+// ============================
+
+tasks.register("dbResetAndGenerate") {
+    group = "local-dev"
+    description = "Reset DB, apply migrations, generate jOOQ code"
+    doLast {
+        println("🧹 Resetting DB...")
+        exec { commandLine("bash", "-c", "./gradlew liquibaseDropAll || true") }
+        exec { commandLine("bash", "-c", "./gradlew liquibaseUpdate") }
+        exec { commandLine("bash", "-c", "./gradlew generateJooq") }
+    }
+}
