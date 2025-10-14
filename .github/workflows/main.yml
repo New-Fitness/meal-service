@@ -30,6 +30,7 @@ jobs:
       SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fitness_ai
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
+      DB_PASSWORD: password
       JAVA_TOOL_OPTIONS: "-Xmx2g"
 
     steps:
@@ -39,8 +40,8 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
           cache: gradle
 
       - name: Wait for PostgreSQL to be ready
@@ -54,9 +55,23 @@ jobs:
             sleep 5
           done
 
-      - name: Grant execute permissions for gradlew
+      - name: Grant execute permissions for Gradle wrapper
         run: chmod +x gradlew
 
-      # 👇 Выполняем полноценную сборку и тестирование в профиле prod
-      - name: Build & Test (with Liquibase)
-        run: ./gradlew clean build --stacktrace
+      # ===============================
+      # 🧱 Liquibase + jOOQ + Build
+      # ===============================
+      - name: Run Liquibase migrations
+        run: ./gradlew update -Penv=prod --stacktrace
+
+      - name: Generate jOOQ code
+        run: ./gradlew generateJooq -Penv=prod --stacktrace
+
+      - name: Build project
+        run: ./gradlew build -Penv=prod --stacktrace
+
+      # ===============================
+      # 🧪 Tests
+      # ===============================
+      - name: Run Tests
+        run: ./gradlew test -Penv=prod --stacktrace

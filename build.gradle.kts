@@ -1,4 +1,7 @@
 import org.jooq.meta.jaxb.Logging
+import org.gradle.kotlin.dsl.support.serviceOf
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 plugins {
     java
@@ -15,45 +18,71 @@ version = "0.0.1-SNAPSHOT"
 description = "meal-service"
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
-configurations {
-    compileOnly {
-        extendsFrom(configurations.annotationProcessor.get())
-    }
-}
-
-repositories {
-    mavenCentral()
-}
-
-val dbUrl = "jdbc:postgresql://localhost:5432/fitness_ai"
-val dbUser = "postgres"
-val dbPassword = "password"
+repositories { mavenCentral() }
 
 extra["springAiVersion"] = "1.0.3"
 
+// ============================
+// 🌿 ENVIRONMENT
+// ============================
+
+val isTestTask = gradle.startParameter.taskNames.any { it.contains("test", ignoreCase = true) }
+val env = project.findProperty("env")
+    ?: if (isTestTask) "test"
+    else (System.getenv("SPRING_PROFILES_ACTIVE") ?: "dev")
+
+val dbConfig = when (env) {
+    "prod" -> mapOf(
+        "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
+        "user" to "postgres",
+        "password" to (System.getenv("DB_PASSWORD") ?: "password")
+    )
+    "test" -> mapOf(
+        "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
+        "user" to "postgres",
+        "password" to "password"
+    )
+    else -> mapOf(
+        "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
+        "user" to "postgres",
+        "password" to "password"
+    )
+}
+
+val dbUrl = dbConfig["url"]!!
+val dbUser = dbConfig["user"]!!
+val dbPassword = dbConfig["password"]!!
+
+println("▶️  Active environment: $env")
+println("📦  Using DB: $dbUrl")
+
+// ============================
+// 📦 DEPENDENCIES
+// ============================
+
 dependencies {
+    implementation("org.liquibase:liquibase-core:4.29.2")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
+    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
     implementation("org.postgresql:postgresql:42.7.3")
     jooqGenerator("org.postgresql:postgresql:42.7.3")
-    implementation("org.liquibase:liquibase-core")
-    annotationProcessor("org.projectlombok:lombok")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // 💡 Важно: runtime для Liquibase
-    liquibaseRuntime("org.liquibase:liquibase-core")
+    liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
     liquibaseRuntime("org.postgresql:postgresql:42.7.3")
-    liquibaseRuntime("info.picocli:picocli:4.7.5") // CLI-зависимость, нужна плагину
+    liquibaseRuntime("info.picocli:picocli:4.7.5")
 }
 
 dependencyManagement {
@@ -63,12 +92,13 @@ dependencyManagement {
 }
 
 // ============================
-// 🚀 Liquibase
+// 🧱 LIQUIBASE CONFIG
 // ============================
+
 liquibase {
     activities.register("main") {
         arguments = mapOf(
-            "changeLogFile" to "src/main/resources/db/changelog/db.changelog-master.yaml",
+            "changelogFile" to "src/main/resources/db/changelog/db.changelog-master.yaml",
             "url" to dbUrl,
             "username" to dbUser,
             "password" to dbPassword
@@ -77,11 +107,15 @@ liquibase {
     runList = "main"
 }
 
-// --- jOOQ code generation ---
+// ============================
+// 🧬 jOOQ CODEGEN
+// ============================
+
 jooq {
     version.set("3.19.9")
     configurations {
         create("main") {
+            generateSchemaSourceOnCompilation.set(false)
             jooqConfiguration.apply {
                 logging = Logging.WARN
                 jdbc.apply {
@@ -112,10 +146,41 @@ jooq {
     }
 }
 
+// ============================
+// ✅ TASK ORDER FIX
+// ============================
+
 tasks.named("generateJooq") {
-    dependsOn("update")
+    dependsOn("update") // это задача из Liquibase Gradle Plugin
 }
+
+tasks.named("compileJava") {
+    dependsOn("generateJooq")
+}
+
+
+// ============================
+// 🧪 TESTS
+// ============================
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    systemProperty("spring.profiles.active", "test")
+    project.extensions.extraProperties["env"] = "test"
+}
+
+// ============================
+// 🧰 LOCAL SHORTCUT
+// ============================
+
+tasks.register("dbResetAndGenerate") {
+    group = "local-dev"
+    description = "Reset DB, apply migrations, generate jOOQ code"
+    doLast {
+        println("🧹 Resetting DB...")
+        val execOps = project.serviceOf<ExecOperations>()
+        execOps.exec { commandLine("bash", "-c", "./gradlew liquibaseDropAll || true") }
+        execOps.exec { commandLine("bash", "-c", "./gradlew liquibaseUpdate") }
+        execOps.exec { commandLine("bash", "-c", "./gradlew generateJooq") }
+    }
 }

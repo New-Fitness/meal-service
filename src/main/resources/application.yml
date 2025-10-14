@@ -4,17 +4,8 @@ server:
 spring:
   application:
     name: meal-service
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/fitness_ai
-    username: postgres
-    password: password
-
-  jooq:
-    sql-dialect: POSTGRES
-
   profiles:
-    active: dev   # 👈 по умолчанию dev
+    active: dev  # по умолчанию
 
 ai:
   ollama:
