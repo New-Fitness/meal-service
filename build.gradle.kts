@@ -1,7 +1,5 @@
-import org.jooq.meta.jaxb.Logging
 import org.gradle.kotlin.dsl.support.serviceOf
-import org.gradle.process.ExecOperations
-import javax.inject.Inject
+import org.jooq.meta.jaxb.Logging
 
 plugins {
     java
@@ -9,6 +7,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("nu.studer.jooq") version "8.2"
     id("org.liquibase.gradle") version "2.2.0"
+    id("org.springdoc.openapi-gradle-plugin") version "1.8.0"
     kotlin("jvm") version "1.9.24"
     kotlin("plugin.spring") version "1.9.24"
 }
@@ -40,11 +39,13 @@ val dbConfig = when (env) {
         "user" to "postgres",
         "password" to (System.getenv("DB_PASSWORD") ?: "password")
     )
+
     "test" -> mapOf(
         "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
         "user" to "postgres",
         "password" to "password"
     )
+
     else -> mapOf(
         "url" to "jdbc:postgresql://localhost:5432/fitness_ai",
         "user" to "postgres",
@@ -69,7 +70,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.ai:spring-ai-starter-model-ollama")
-
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -105,6 +107,12 @@ liquibase {
         )
     }
     runList = "main"
+}
+
+openApi {
+    apiDocsUrl.set("http://localhost:8080/v3/api-docs.yaml")
+    outputDir.set(file("$projectDir/docs"))
+    outputFileName.set("openapi.yaml")
 }
 
 // ============================
