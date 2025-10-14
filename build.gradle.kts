@@ -110,8 +110,8 @@ liquibase {
 }
 
 openApi {
-    apiDocsUrl.set("http://localhost:8080/v3/api-docs.yaml")
-    outputDir.set(file("$projectDir/docs"))
+    apiDocsUrl.set("http://localhost:8081/v3/api-docs.yaml")
+    outputDir.set(file("$projectDir/docs/openapi"))
     outputFileName.set("openapi.yaml")
 }
 
