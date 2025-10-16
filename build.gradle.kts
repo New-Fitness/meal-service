@@ -20,7 +20,6 @@ java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
-repositories { mavenCentral() }
 
 extra["springAiVersion"] = "1.0.3"
 
@@ -64,34 +63,55 @@ println("📦  Using DB: $dbUrl")
 // 📦 DEPENDENCIES
 // ============================
 
+repositories {
+    mavenCentral()
+    // важно: milestone и snapshot должны идти после mavenCentral
+    maven { url = uri("https://repo.spring.io/milestone") }
+    maven { url = uri("https://repo.spring.io/snapshot") }
+}
+
+dependencyManagement {
+    imports {
+        // официальная стабильная версия с поддержкой ollama и pgvector
+        mavenBom("org.springframework.ai:spring-ai-bom:1.0.3")
+    }
+}
+
 dependencies {
-    implementation("org.liquibase:liquibase-core:4.29.2")
+    // 🔹 Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.springframework.ai:spring-ai-starter-model-ollama")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+    // 🔹 Spring AI (Ollama + PGVector)
+    implementation("org.springframework.ai:spring-ai-ollama:1.0.3")
+    implementation("org.springframework.ai:spring-ai-pgvector-store:1.0.3")
+    implementation ("org.springframework.ai:spring-ai-starter-model-ollama")
+
+    // 🔹 OpenAPI
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+    // 🔹 Liquibase + Postgres
+    implementation("org.liquibase:liquibase-core:4.29.2")
     implementation("org.postgresql:postgresql:42.7.3")
     jooqGenerator("org.postgresql:postgresql:42.7.3")
 
+    // 🔹 Lombok
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // 🔹 Dev + Tests
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    // 🔹 Liquibase runtime
     liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
     liquibaseRuntime("org.postgresql:postgresql:42.7.3")
     liquibaseRuntime("info.picocli:picocli:4.7.5")
 }
 
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
-    }
-}
 
 // ============================
 // 🧱 LIQUIBASE CONFIG
