@@ -1,7 +1,19 @@
 databaseChangeLog:
   - include:
-      file: changes/002-enable-uuid.sql
+      file: changes/001-create-extensions.sql
       relativeToChangelogFile: true
   - include:
-      file: changes/001-create-meal-table.sql
+      file: changes/002-create-table-meal.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-create-foreign-meal-tables.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/004-create-table-chat-memory.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/005-create-table-meal-feedback.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/006-create-model-dependent-tables.sql
       relativeToChangelogFile: true

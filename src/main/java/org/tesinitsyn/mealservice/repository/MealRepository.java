@@ -54,7 +54,7 @@ public class MealRepository {
                 .set(MEAL.USER_ID, meal.userId())
                 .set(MEAL.NAME, meal.name())
                 .set(MEAL.DESCRIPTION, meal.description())
-                .set(MEAL.CALORIES, meal.calories())
+                .set(MEAL.TOTAL_CALORIES, meal.calories())
                 .execute();
         return meal;
     }
@@ -73,7 +73,7 @@ public class MealRepository {
                         record.getUserId(),
                         record.getName(),
                         record.getDescription(),
-                        record.getCalories(),
+                        record.getTotalCalories(),
                         record.getCreatedAt()
                 ));
     }
