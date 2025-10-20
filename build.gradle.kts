@@ -24,7 +24,7 @@ java {
 extra["springAiVersion"] = "1.0.3"
 
 // ============================
-// 🌿 ENVIRONMENT
+// ENVIRONMENT
 // ============================
 
 val isTestTask = gradle.startParameter.taskNames.any { it.contains("test", ignoreCase = true) }
@@ -56,11 +56,11 @@ val dbUrl = dbConfig["url"]!!
 val dbUser = dbConfig["user"]!!
 val dbPassword = dbConfig["password"]!!
 
-println("▶️  Active environment: $env")
-println("📦  Using DB: $dbUrl")
+println("Active environment: $env")
+println("Using DB: $dbUrl")
 
 // ============================
-// 📦 DEPENDENCIES
+// DEPENDENCIES
 // ============================
 
 repositories {
@@ -68,53 +68,62 @@ repositories {
     // важно: milestone и snapshot должны идти после mavenCentral
     maven { url = uri("https://repo.spring.io/milestone") }
     maven { url = uri("https://repo.spring.io/snapshot") }
+    maven {
+        url = uri("https://maven.pkg.github.com/New-Fitness/common")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 dependencyManagement {
     imports {
-        // официальная стабильная версия с поддержкой ollama и pgvector
         mavenBom("org.springframework.ai:spring-ai-bom:1.0.3")
     }
 }
 
 dependencies {
-    // 🔹 Spring Boot
+    // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
-    // 🔹 Spring AI (Ollama + PGVector)
+    // Spring AI (Ollama + PGVector)
     implementation("org.springframework.ai:spring-ai-ollama:1.0.3")
     implementation("org.springframework.ai:spring-ai-pgvector-store:1.0.3")
     implementation ("org.springframework.ai:spring-ai-starter-model-ollama")
 
-    // 🔹 OpenAPI
+    // OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
-    // 🔹 Liquibase + Postgres
+    // Liquibase + Postgres
     implementation("org.liquibase:liquibase-core:4.29.2")
     implementation("org.postgresql:postgresql:42.7.3")
     jooqGenerator("org.postgresql:postgresql:42.7.3")
 
-    // 🔹 Lombok
+    // Lombok
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
-    // 🔹 Dev + Tests
+    // Dev + Tests
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // 🔹 Liquibase runtime
+    // Liquibase runtime
     liquibaseRuntime("org.liquibase:liquibase-core:4.29.2")
     liquibaseRuntime("org.postgresql:postgresql:42.7.3")
     liquibaseRuntime("info.picocli:picocli:4.7.5")
+
+    // Common
+    implementation("com.newfitness:common:1.0.1")
 }
 
 
 // ============================
-// 🧱 LIQUIBASE CONFIG
+// LIQUIBASE CONFIG
 // ============================
 
 liquibase {
@@ -136,7 +145,7 @@ openApi {
 }
 
 // ============================
-// 🧬 jOOQ CODEGEN
+// jOOQ CODEGEN
 // ============================
 
 jooq {
@@ -175,7 +184,7 @@ jooq {
 }
 
 // ============================
-// ✅ TASK ORDER FIX
+// TASK ORDER FIX
 // ============================
 
 tasks.named("generateJooq") {
@@ -188,7 +197,7 @@ tasks.named("compileJava") {
 
 
 // ============================
-// 🧪 TESTS
+// TESTS
 // ============================
 
 tasks.withType<Test> {
@@ -198,7 +207,7 @@ tasks.withType<Test> {
 }
 
 // ============================
-// 🧰 LOCAL SHORTCUT
+// LOCAL SHORTCUT
 // ============================
 
 tasks.register("dbResetAndGenerate") {

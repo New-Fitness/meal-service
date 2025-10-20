@@ -1,13 +1,12 @@
 package org.tesinitsyn.mealservice.service;
 
 
+import org.mlgym.transfer.contract.meal.MealDto;
+import org.mlgym.transfer.contract.meal.MealRequest;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.tesinitsyn.mealservice.model.MealDto;
-import org.tesinitsyn.mealservice.model.MealRequest;
 import org.tesinitsyn.mealservice.repository.MealRepository;
 
 import java.util.ArrayList;

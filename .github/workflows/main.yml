@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ankane/pgvector:latest
-
     services:
       postgres:
         image: postgres:16
@@ -59,7 +58,7 @@ jobs:
         run: chmod +x gradlew
 
       # ===============================
-      # 🧱 Liquibase + jOOQ + Build
+      # Liquibase + jOOQ + Build
       # ===============================
       - name: Run Liquibase migrations
         run: ./gradlew update -Penv=prod --stacktrace
@@ -69,9 +68,8 @@ jobs:
 
       - name: Build project
         run: ./gradlew build -Penv=prod --stacktrace
-
-      # ===============================
-      # 🧪 Tests
-      # ===============================
+  tests:
+    runs-on: ankane/pgvector:latest
+    steps:
       - name: Run Tests
         run: ./gradlew test -Penv=prod --stacktrace
