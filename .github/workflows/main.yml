@@ -111,7 +111,7 @@ jobs:
         run: ./gradlew update -Penv=prod --stacktrace
 
       - name: Build project
-        run: ./gradlew clean update generateJooq build -Penv=prod --stacktrace
+        run: ./gradlew generateJooq build -Penv=prod --stacktrace
 
   # ======================================
   # 🔹 Stage 4: Tests (unit + integration)
