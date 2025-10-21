@@ -118,7 +118,7 @@ dependencies {
     liquibaseRuntime("info.picocli:picocli:4.7.5")
 
     // Common
-    implementation("org.mlgym:common:1.0.1")
+    implementation("org.mlgym:common:1.0.2")
 }
 
 
