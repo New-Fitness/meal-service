@@ -90,6 +90,9 @@ jobs:
           EOF
           echo "✅ Gradle configured for GitHub Packages"
 
+      - name: Verify access to GitHub Packages
+        run: ./gradlew dependencies --info
+
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..10}; do
