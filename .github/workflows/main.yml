@@ -165,7 +165,7 @@ jobs:
           echo "✅ Gradle configured for GitHub Packages"
 
       - name: Run unit + integration tests
-        run: "echo skip test:)"
+        run: echo "echo skip test:)"
 
   # ======================================
   # 🔹 Stage 5: Build on push (merge в main/develop)
