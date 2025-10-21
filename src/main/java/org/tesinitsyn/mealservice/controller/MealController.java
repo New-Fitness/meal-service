@@ -7,9 +7,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.mlgym.transfer.contract.meal.MealDto;
+import org.mlgym.transfer.contract.meal.MealRequest;
 import org.springframework.web.bind.annotation.*;
-import org.tesinitsyn.mealservice.model.MealDto;
-import org.tesinitsyn.mealservice.model.MealRequest;
 import org.tesinitsyn.mealservice.service.MealService;
 
 import java.util.UUID;

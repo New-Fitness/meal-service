@@ -1,8 +1,8 @@
 package org.tesinitsyn.mealservice.repository;
 
 import org.jooq.DSLContext;
+import org.mlgym.transfer.contract.meal.MealDto;
 import org.springframework.stereotype.Repository;
-import org.tesinitsyn.mealservice.model.MealDto;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +26,7 @@ import static com.fitnessai.meal.jooq.generated.Tables.MEAL;
  *
  * @author tesinitsyn
  * @see org.jooq.DSLContext
- * @see org.tesinitsyn.mealservice.model.MealDto
+ * @see org.mlgym.transfer.contract.meal.MealDto;
  */
 @Repository
 public class MealRepository {
@@ -54,7 +54,7 @@ public class MealRepository {
                 .set(MEAL.USER_ID, meal.userId())
                 .set(MEAL.NAME, meal.name())
                 .set(MEAL.DESCRIPTION, meal.description())
-                .set(MEAL.CALORIES, meal.calories())
+                .set(MEAL.TOTAL_CALORIES, meal.calories())
                 .execute();
         return meal;
     }
@@ -73,7 +73,7 @@ public class MealRepository {
                         record.getUserId(),
                         record.getName(),
                         record.getDescription(),
-                        record.getCalories(),
+                        record.getTotalCalories(),
                         record.getCreatedAt()
                 ));
     }

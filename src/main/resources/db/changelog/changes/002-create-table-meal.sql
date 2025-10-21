@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS meal
 
 CREATE INDEX IF NOT EXISTS idx_meal_user_id ON meal (user_id);
 CREATE INDEX IF NOT EXISTS idx_meal_meal_time ON meal (meal_time);
---roll
+--rollback DROP TABLE IF EXISTS meal;

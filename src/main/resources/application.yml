@@ -7,13 +7,20 @@ spring:
   profiles:
     active: dev  # по умолчанию
 
-ai:
-  ollama:
-    base-url: http://localhost:11434
-    init:
-      pull-model-strategy: when_missing
-    chat:
-      options:
+  ai:
+#    vectorstore:
+#      store-type: pgvector      # ← обязательно
+#      pgvector:
+#        table-name: chat_memory        # имя таблицы
+#        initialize-schema: true        # создаст колонки, если их нет
+#        dimension: 768                 # под embed-модель (nomic-embed-text = 768)
+    ollama:
+      base-url: http://localhost:11434
+      init:
+        pull-model-strategy: when_missing
+      embedding:
+        model: nomic-embed-text
+      chat:
         model: llama3:latest
         temperature: 0.2
 
@@ -29,4 +36,3 @@ springdoc:
   swagger-ui:
     path: /swagger
     operations-sorter: alpha
-

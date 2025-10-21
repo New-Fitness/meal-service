@@ -1,13 +1,12 @@
 package org.tesinitsyn.mealservice.service;
 
 
+import org.mlgym.transfer.contract.meal.MealDto;
+import org.mlgym.transfer.contract.meal.MealRequest;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.stereotype.Service;
-import org.tesinitsyn.mealservice.model.MealDto;
-import org.tesinitsyn.mealservice.model.MealRequest;
 import org.tesinitsyn.mealservice.repository.MealRepository;
 
 import java.util.ArrayList;
@@ -39,8 +38,8 @@ import java.util.regex.Pattern;
 public class MealService {
 
     private final MealRepository repository;
-    private final OllamaChatModel chatModel;
 
+    private final OllamaChatModel chatModel;
     /**
      * Конструктор сервиса.
      *
@@ -68,14 +67,11 @@ public class MealService {
 
         ChatResponse aiResponse = chatModel.call(
                 new Prompt(
-                        "Count how many calories in here and just give me one number of calories there is no need of descriptive answer" + request.description(),
-                        OllamaOptions.builder()
-                                .model("llama3:latest")
-                                .temperature(0.4)
-                                .build()
+                        "Count how many calories in here and just give me one number of calories there is" +
+                                " no need of descriptive answer" + request.description()
                 ));
 
-        Integer calories = extractCalories(Objects.requireNonNull(aiResponse.getResult().getOutput().getText()));
+        Integer calories = extractCalories(Objects.requireNonNull(aiResponse.getResult().getOutput().toString()));
 
         MealDto meal = new MealDto(
                 UUID.randomUUID(),
