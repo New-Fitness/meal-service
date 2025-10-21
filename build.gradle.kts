@@ -118,7 +118,7 @@ dependencies {
     liquibaseRuntime("info.picocli:picocli:4.7.5")
 
     // Common
-    implementation("com.newfitness:common:1.0.1")
+    implementation("com.mlgym:common:1.0.1")
 }
 
 
