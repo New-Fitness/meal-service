@@ -110,11 +110,8 @@ jobs:
       - name: Run Liquibase migrations
         run: ./gradlew update -Penv=prod --stacktrace
 
-      - name: Generate jOOQ code
-        run: ./gradlew generateJooq -Penv=prod --stacktrace
-
       - name: Build project
-        run: ./gradlew build -Penv=prod --stacktrace
+        run: ./gradlew clean update generateJooq build -Penv=prod --stacktrace
 
   # ======================================
   # 🔹 Stage 4: Tests (unit + integration)
